@@ -1,4 +1,4 @@
-title: Suspicious PowerShell Execution
+#title: Suspicious PowerShell Execution
 id: 10000001-0000-0000-0000-000000000001
 status: experimental
 description: Detecta ejecución sospechosa de PowerShell con parámetros habituales en ataques.
