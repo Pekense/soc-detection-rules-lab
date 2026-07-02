@@ -1,0 +1,24 @@
+title: AWS Console Failed Login
+id: 30000001-0000-0000-0000-000000000001
+status: experimental
+description: Detecta intentos fallidos de inicio de sesión en la consola de AWS mediante eventos de CloudTrail.
+author: Rafa
+date: 2026/07/02
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventName: ConsoleLogin
+    errorMessage|contains:
+      - 'Failed authentication'
+      - 'No username found in supplied account'
+      - 'Invalid username or password'
+  condition: selection
+falsepositives:
+  - Usuarios que olvidan la contraseña
+  - Errores legítimos de autenticación
+level: medium
+tags:
+  - attack.initial_access
+  - attack.t1078
