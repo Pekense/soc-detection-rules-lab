@@ -1,0 +1,26 @@
+title: Linux Privilege Escalation Attempt
+id: 20000001-0000-0000-0000-000000000001
+status: experimental
+description: Detecta comandos habituales asociados a intentos de escalada de privilegios en sistemas Linux.
+author: Rafa
+date: 2026/07/02
+logsource:
+  product: linux
+  service: auditd
+detection:
+  selection:
+    command|contains:
+      - 'sudo su'
+      - 'chmod +s'
+      - 'setuid'
+      - 'pkexec'
+      - '/etc/sudoers'
+  condition: selection
+falsepositives:
+  - Administración legítima del sistema
+  - Tareas de mantenimiento autorizadas
+level: high
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+  - attack.t1548
