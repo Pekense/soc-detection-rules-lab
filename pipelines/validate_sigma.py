@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Validador básico de reglas Sigma.
+Validador de reglas Sigma.
 
 Comprueba que todos los ficheros YAML dentro de rules/
-contienen los campos mínimos necesarios para una regla Sigma.
+contienen los campos mínimos, valores esperados y estructura básica.
 """
 
 from pathlib import Path
@@ -22,6 +22,99 @@ REQUIRED_FIELDS = [
     "detection",
     "level",
 ]
+
+VALID_STATUS = {
+    "stable",
+    "test",
+    "experimental",
+    "deprecated",
+    "unsupported",
+}
+
+VALID_LEVELS = {
+    "informational",
+    "low",
+    "medium",
+    "high",
+    "critical",
+}
+
+
+def validate_required_fields(rule: dict, file_path: Path) -> bool:
+    """Valida que existan los campos obligatorios."""
+    missing_fields = [field for field in REQUIRED_FIELDS if field not in rule]
+
+    if missing_fields:
+        print(f"ERROR: {file_path} no tiene estos campos obligatorios: {missing_fields}")
+        return False
+
+    return True
+
+
+def validate_non_empty_values(rule: dict, file_path: Path) -> bool:
+    """Valida que los campos obligatorios no estén vacíos."""
+    for field in REQUIRED_FIELDS:
+        value = rule.get(field)
+
+        if value in ("", None, [], {}):
+            print(f"ERROR: {file_path} tiene el campo vacío: {field}")
+            return False
+
+    return True
+
+
+def validate_status(rule: dict, file_path: Path) -> bool:
+    """Valida el campo status."""
+    status = rule.get("status")
+
+    if status not in VALID_STATUS:
+        print(
+            f"ERROR: {file_path} tiene status inválido: {status}. "
+            f"Valores válidos: {sorted(VALID_STATUS)}"
+        )
+        return False
+
+    return True
+
+
+def validate_level(rule: dict, file_path: Path) -> bool:
+    """Valida el campo level."""
+    level = rule.get("level")
+
+    if level not in VALID_LEVELS:
+        print(
+            f"ERROR: {file_path} tiene level inválido: {level}. "
+            f"Valores válidos: {sorted(VALID_LEVELS)}"
+        )
+        return False
+
+    return True
+
+
+def validate_logsource(rule: dict, file_path: Path) -> bool:
+    """Valida que logsource tenga estructura de diccionario."""
+    logsource = rule.get("logsource")
+
+    if not isinstance(logsource, dict):
+        print(f"ERROR: {file_path} tiene logsource inválido. Debe ser un diccionario.")
+        return False
+
+    return True
+
+
+def validate_detection(rule: dict, file_path: Path) -> bool:
+    """Valida que detection tenga estructura mínima."""
+    detection = rule.get("detection")
+
+    if not isinstance(detection, dict):
+        print(f"ERROR: {file_path} tiene detection inválido. Debe ser un diccionario.")
+        return False
+
+    if "condition" not in detection:
+        print(f"ERROR: {file_path} no tiene detection.condition.")
+        return False
+
+    return True
 
 
 def validate_rule(file_path: Path) -> bool:
@@ -42,14 +135,20 @@ def validate_rule(file_path: Path) -> bool:
         print(f"ERROR: {file_path} no contiene un YAML válido tipo diccionario.")
         return False
 
-    missing_fields = [field for field in REQUIRED_FIELDS if field not in rule]
+    validations = [
+        validate_required_fields(rule, file_path),
+        validate_non_empty_values(rule, file_path),
+        validate_status(rule, file_path),
+        validate_level(rule, file_path),
+        validate_logsource(rule, file_path),
+        validate_detection(rule, file_path),
+    ]
 
-    if missing_fields:
-        print(f"ERROR: {file_path} no tiene estos campos obligatorios: {missing_fields}")
-        return False
+    if all(validations):
+        print(f"OK: {file_path}")
+        return True
 
-    print(f"OK: {file_path}")
-    return True
+    return False
 
 
 def main() -> int:
@@ -60,7 +159,9 @@ def main() -> int:
         print("ERROR: no existe el directorio rules/")
         return 1
 
-    rule_files = list(rules_path.rglob("*.yml")) + list(rules_path.rglob("*.yaml"))
+    rule_files = sorted(
+        list(rules_path.rglob("*.yml")) + list(rules_path.rglob("*.yaml"))
+    )
 
     if not rule_files:
         print("ERROR: no se han encontrado reglas Sigma.")
